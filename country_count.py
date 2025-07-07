@@ -31,6 +31,14 @@ def process_data(data):
             location_parts = [parts[i][:-len("toggle")].rstrip(',')]
         location = ' '.join(location_parts).strip()
         cleaned_location = re.sub(r'toggle$', '', location, flags=re.IGNORECASE).strip()
+        # Special handling for Türkiye
+        if cleaned_location.lower() == "türkiye":
+            country_abbr = "Türkiye"
+            if country_abbr in country_dict:
+                country_dict[country_abbr] += count
+            else:
+                country_dict[country_abbr] = count
+            continue
         try:
             country = pycountry.countries.lookup(cleaned_location)
             country_name = country.name
@@ -40,6 +48,14 @@ def process_data(data):
             else:
                 country_dict[country_abbr] = count
         except LookupError:
+            # If user input is Türkiye, treat as Turkey for lookup
+            if cleaned_location.lower() == "türkiye":
+                country_abbr = "Türkiye"
+                if country_abbr in country_dict:
+                    country_dict[country_abbr] += count
+                else:
+                    country_dict[country_abbr] = count
+                continue
             try:
                 fuzzy_matches = pycountry.countries.search_fuzzy(cleaned_location)
                 if fuzzy_matches:

@@ -194,5 +194,7 @@ country_mapping = {
     "Viet Nam": "Vietnam",
     "Yemen": "Yemen",
     "Zambia": "Zambia",
-    "Zimbabwe": "Zimbabwe"
+    "Zimbabwe": "Zimbabwe",
+    "Turkey": "Türkiye",
+    "Türkiye": "Türkiye"
 }
