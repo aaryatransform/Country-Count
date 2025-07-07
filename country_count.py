@@ -3,11 +3,7 @@ import pycountry
 import re
 
 
-country_mapping = {
-    "United States": "US",
-    "United Kingdom": "UK",
-    "United Arab Emirates": "UAE"
-}
+from country_mapping import country_mapping
 
 def process_data(data):
     lines = data.strip().split('\n')
@@ -38,7 +34,7 @@ def process_data(data):
         try:
             country = pycountry.countries.lookup(cleaned_location)
             country_name = country.name
-            country_abbr = country_mapping.get(country_name, country_name)
+            country_abbr = country_mapping.get(country_name, country_mapping.get(country_name.lower(), country_name))
             if country_abbr in country_dict:
                 country_dict[country_abbr] += count
             else:
@@ -48,7 +44,7 @@ def process_data(data):
                 fuzzy_matches = pycountry.countries.search_fuzzy(cleaned_location)
                 if fuzzy_matches:
                     country_name = fuzzy_matches[0].name
-                    country_abbr = country_mapping.get(country_name, country_name)
+                    country_abbr = country_mapping.get(country_name, country_mapping.get(country_name.lower(), country_name))
                     if country_abbr in country_dict:
                         country_dict[country_abbr] += count
                     else:
