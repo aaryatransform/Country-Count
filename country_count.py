@@ -2,22 +2,17 @@ import streamlit as st
 import pycountry
 import re
 
-# Country name mapping for abbreviations
+
 country_mapping = {
     "United States": "US",
     "United Kingdom": "UK",
     "United Arab Emirates": "UAE"
 }
 
-# Incomplete names mapping
-incomplete_names = {
-    "United": "United States",
-    # Add more if needed
-}
-
 def process_data(data):
     lines = data.strip().split('\n')
     country_dict = {}
+    
     for line in lines:
         line = line.strip()
         if not line:
@@ -26,53 +21,54 @@ def process_data(data):
         if len(parts) < 3:
             continue
         try:
-            count = int(parts[0])
+            count = int(parts[0].replace(',', ''))
         except ValueError:
             continue
-        # Find index where part ends with "toggle"
         for i in range(1, len(parts)):
             if parts[i].endswith("toggle"):
                 break
         else:
-            continue  # No "toggle" found
-        # Extract location parts
+            continue
         if i > 1:
             location_parts = parts[1:i] + [parts[i][:-len("toggle")].rstrip(',')]
         else:
             location_parts = [parts[i][:-len("toggle")].rstrip(',')]
         location = ' '.join(location_parts).strip()
-        if not location:
-            continue
-        # Check for incomplete names
-        if location in incomplete_names:
-            location = incomplete_names[location]
-        # Try to look up the country
+        cleaned_location = re.sub(r'toggle$', '', location, flags=re.IGNORECASE).strip()
         try:
-            country = pycountry.countries.lookup(location)
+            country = pycountry.countries.lookup(cleaned_location)
             country_name = country.name
-            if country_name in country_mapping:
-                country_abbr = country_mapping[country_name]
-            else:
-                country_abbr = country_name
-            # Add to dictionary
+            country_abbr = country_mapping.get(country_name, country_name)
             if country_abbr in country_dict:
                 country_dict[country_abbr] += count
             else:
                 country_dict[country_abbr] = count
         except LookupError:
-            continue  # Not a country
-    # Generate output
-    output = '; '.join([f"{country}: {count}" for country, count in country_dict.items() if count > 0])
+            try:
+                fuzzy_matches = pycountry.countries.search_fuzzy(cleaned_location)
+                if fuzzy_matches:
+                    country_name = fuzzy_matches[0].name
+                    country_abbr = country_mapping.get(country_name, country_name)
+                    if country_abbr in country_dict:
+                        country_dict[country_abbr] += count
+                    else:
+                        country_dict[country_abbr] = count
+                else:
+                    continue
+            except LookupError:
+                continue
+    # Generate output, sorted alphabetically
+    output = '; '.join([f"{country}: {count}" for country, count in sorted(country_dict.items()) if count > 0])
     return output if output else "No valid country data found."
 
-# Streamlit UI
+
 st.title("Country Count Extractor")
-st.write("Paste your data below in the format 'count location toggle off' (e.g., '316 United States toggle off').")
+st.write("Paste your data below in the format 'count location toggle off' (e.g., '2,666 United States toggle off').")
 input_data = st.text_area("Input Data:", height=300)
 if st.button("Process"):
     if input_data:
         result = process_data(input_data)
         st.write("**Result:**")
-        st.code(result, language=None)  # Streamlit's code block includes a copy button
+        st.code(result, language=None)
     else:
         st.write("Please provide input data.")
